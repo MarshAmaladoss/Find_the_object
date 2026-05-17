@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hidden Detective: New Cases</title>
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; }
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: #140f0b; font-family: 'Segoe UI', sans-serif; color: #fff;
+            display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
+        }
+
+        .header {
+            width: 100%; height: 60px; background: #000; padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid #e67e22; z-index: 10;
+        }
+        .hud-title { color: #e67e22; font-weight: 900; letter-spacing: 1px; }
+        .hud-timer { color: #ff4444; font-size: 22px; font-weight: bold; }
+        .hud-score { color: #00ff88; font-weight: bold; }
+
+        .tray-container {
+            width: 100%; background: #221810; padding: 12px;
+            display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;
+            border-bottom: 2px solid #3a271a; min-height: 55px;
+        }
+        .clue-tag {
+            background: #0f0a06; padding: 6px 14px; border-radius: 20px;
+            border: 1px solid #e67e22; font-size: 13px; transition: all 0.3s;
+        }
+        .clue-tag.found {
+            background: #1b3d1e; border-color: #00ff88; color: #85ff9e;
+            text-decoration: line-through; opacity: 0.5;
+        }
+
+        /* Interactive Zoom Interface */
+        .control-bar {
+            display: flex; gap: 15px; margin-top: 10px; z-index: 5;
+        }
+        .tool-btn {
+            background: #2c1d11; border: 1px solid #e67e22; color: #fff;
+            padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
+        }
+        .tool-btn:active { background: #e67e22; }
+
+        /* Enlarged Adaptive Viewport Panel */
+        #scene-container {
+            position: relative; width: 98%; max-width: 1100px;
+            aspect-ratio: 1.63 / 1; margin: 15px 0;
+            border: 4px solid #3a271a; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.8);
+            background: #000;
+        }
+        #zoom-wrapper {
+            width: 100%; height: 100%;
+            transition: transform 0.2s ease-out;
+            transform-origin: center center;
+        }
+        #scene-img { 
+            width: 100%; height: 100%; display: block; 
+            object-fit: fill; cursor: crosshair; 
+        }
+
+        .ring-indicator {
+            position: absolute; border-radius: 50%; pointer-events: none;
+            transform: translate(-50%, -50%); z-index: 5;
+        }
+        .ring-match { border: 4px solid #00ff88; animation: burst 0.4s ease-out forwards; }
+        .ring-miss { border: 4px solid #ff4444; animation: burst 0.4s ease-out forwards; }
+
+        @keyframes burst {
+            0% { width: 10px; height: 10px; opacity: 1; }
+            100% { width: 45px; height: 45px; opacity: 0; }
+        }
+
+        .panel-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 10, 6, 0.98); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100; text-align: center; padding: 25px;
+        }
+        .btn {
+            padding: 15px 40px; border-radius: 30px; border: none; font-weight: bold;
+            font-size: 16px; cursor: pointer; background: #e67e22; color: #fff;
+            box-shadow: 0 4px 0 #a05010; transition: transform 0.1s; margin: 10px;
+        }
+        input {
+            padding: 15px; border-radius: 10px; border: 2px solid #e67e22;
+            background: #000; color: #fff; font-size: 18px; text-align: center;
+            width: 260px; margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="hud-title" id="stage-label">CASE 1/4</div>
+        <div class="hud-timer" id="timer-text">01:00</div>
+        <div class="hud-score">STREAK: <span id="streak-num">0</span></div>
+    </div>
+
+    <div class="tray-container" id="tray"></div>
+
+    <div class="control-bar">
+        <button class="tool-btn" onclick="adjustZoom(0.25)">🔍 ZOOM +</button>
+        <button class="tool-btn" onclick="adjustZoom(-0.25)">🔍 ZOOM -</button>
+        <button class="tool-btn" onclick="resetZoom()">🔄 RESET</button>
+    </div>
+
+    <div id="scene-container">
+        <div id="zoom-wrapper">
+            <img id="scene-img" src="" alt="Investigation Scene">
+        </div>
+    </div>
+
+    <div id="start-panel" class="panel-overlay" style="display: flex;">
+        <h1 style="color: #e67e22; font-size: 42px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
+        <p style="color: #aaa; margin-bottom: 30px;">4 New Maps • 5 Targets Per Stage • 1 Minute Match Time</p>
+        <input type="text" id="nameInput" placeholder="Enter Agent Initials">
+        <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
+    </div>
+
+    <div id="clear-panel" class="panel-overlay">
+        <h1 style="color: #00ff88; font-size: 40px;" id="clear-header">SCENE CLEARED</h1>
+        <p id="clear-commentary" style="color: #ccc; margin-bottom: 25px; font-size: 18px;"></p>
+        <button class="btn" id="action-step-btn" onclick="progressPipeline()">CONTINUE</button>
+    </div>
+
+    <script>
+        const img = document.getElementById('scene-img');
+        const zoomWrapper = document.getElementById('zoom-wrapper');
+        const container = document.getElementById('scene-container');
+        const tray = document.getElementById('tray');
+
+        let currentStageIndex = 0;
+        let timeRemaining = 60;
+        let clockInterval = null;
+        let agentName = "";
+        let globalStreak = 0;
+        let currentZoomScale = 1;
+
+        /* Re-mapped coordinates specifically tracking target patterns across your 4 new images */
+        const levelManifest = [
+            {
+                title: "CASE 1: THE TOY STUDY ROOM",
+                src: "30592.png", 
+                clues: [
+                    { name: "Terrestrial Globe", x: 110, y: 155, r: 35, found: false },
+                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 35, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 430, r: 40, found: false },
+                    { name: "Green Desk Lamp", x: 150, y: 775, r: 35, found: false },
+                    { name: "Abacus Frame", x: 950, y: 475, r: 35, found: false }
+                ]
+            },
+            {
+                title: "CASE 2: THE OCEAN VIEW LOUNGE",
+                src: "30680.png",
+                clues: [
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 35, found: false },
+                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 30, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 25, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 25, found: false },
+                    { name: "Large Burlap Sack", x: 630, y: 720, r: 40, found: false }
+                ]
+            },
+            {
+                title: "CASE 3: THE FOREST PLAYGROUND",
+                src: "30682.png",
+                clues: [
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 45, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 35, found: false },
+                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 25, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 30, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 30, found: false }
+                ]
+            },
+            {
+                title: "CASE 4: THE NEON BEDROOM",
+                src: "30684.png", 
+                clues: [
+                    { name: "Laptop Workspace", x: 440, y: 815, r: 45, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 30, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 35, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 40, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 25, found: false }
+                ]
+            }
+        ];
+
+        function initiateGame() {
+            agentName = document.getElementById('nameInput').value.trim() || "Agent X";
+            document.getElementById('start-panel').style.display = "none";
+            currentStageIndex = 0;
+            globalStreak = 0;
+            document.getElementById('streak-num').innerText = globalStreak;
+            loadStage();
+        }
+
+        function loadStage() {
+            const currentStage = levelManifest[currentStageIndex];
+            document.getElementById('stage-label').innerText = `CASE ${currentStageIndex + 1}/${levelManifest.length}`;
+            resetZoom();
+            
+            img.src = currentStage.src;
+
+            currentStage.clues.forEach(c => c.found = false);
+            generateTrayMarkup();
+            startCountdown();
+        }
+
+        function generateTrayMarkup() {
+            tray.innerHTML = "";
+            levelManifest[currentStageIndex].clues.forEach(clue => {
+                const badge = document.createElement('div');
+                badge.className = `clue-tag ${clue.found ? 'found' : ''}`;
+                badge.innerText = clue.name;
+                tray.appendChild(badge);
+            });
+        }
+
+        function adjustZoom(amount) {
+            currentZoomScale = Math.min(3, Math.max(1, currentZoomScale + amount));
+            zoomWrapper.style.transform = `scale(${currentZoomScale})`;
+        }
+
+        function resetZoom() {
+            currentZoomScale = 1;
+            zoomWrapper.style.transform = `scale(1)`;
+        }
+
+        img.onclick = function(e) {
+            if (timeRemaining <= 0) return;
+            
+            const dimensions = img.getBoundingClientRect();
+            const currentStage = levelManifest[currentStageIndex];
+
+            // Extract unscaled dimensions to bypass layout zoom properties
+            const unscaledWidth = dimensions.width / currentZoomScale;
+            const unscaledHeight = dimensions.height / currentZoomScale;
+
+            // Isolate layout positioning maps relative to centered zoom offsets
+            const clickXRelative = e.clientX - (dimensions.left + (dimensions.width - unscaledWidth) / 2);
+            const clickYRelative = e.clientY - (dimensions.top + (dimensions.height - unscaledHeight) / 2);
+
+            // Project coordinates directly back onto the 1000 x 613 baseline asset grid
+            const computedX = clickXRelative * (1000 / unscaledWidth);
+            const computedY = clickYRelative * (613 / unscaledHeight);
+
+            let isMatch = false;
+            const activeClues = currentStage.clues;
+
+            for (let clue of activeClues) {
+                if (clue.found) continue;
+                
+                let range = Math.hypot(computedX - clue.x, computedY - clue.y);
+                if (range <= clue.r) {
+                    clue.found = true;
+                    isMatch = true;
+                    
+                    const rect = container.getBoundingClientRect();
+                    renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-match');
+                    generateTrayMarkup();
+                    break;
+                }
+            }
+
+            if (!isMatch) {
+                const rect = container.getBoundingClientRect();
+                renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-miss');
+            } else {
+                if (activeClues.every(c => c.found)) {
+                    terminateCountdown();
+                    triggerEvaluationScreen(true);
+                }
+            }
+        };
+
+        function renderPulseRing(posX, posY, typeClass) {
+            const burstNode = document.createElement('div');
+            burstNode.className = `ring-indicator ${typeClass}`;
+            burstNode.style.left = `${posX}px`;
+            burstNode.style.top = `${posY}px`;
+            container.appendChild(burstNode);
+            setTimeout(() => burstNode.remove(), 400);
+        }
+
+        function startCountdown() {
+            timeRemaining = 60;
+            updateCountdownText();
+            clearInterval(clockInterval);
+            clockInterval = setInterval(() => {
+                timeRemaining--;
+                updateCountdownText();
+                if (timeRemaining <= 0) {
+                    terminateCountdown();
+                    triggerEvaluationScreen(false);
+                }
+            }, 1000);
+        }
+
+        function updateCountdownText() {
+            const minutes = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
+            const seconds = String(timeRemaining % 60).padStart(2, '0');
+            document.getElementById('timer-text').innerText = `${minutes}:${seconds}`;
+        }
+
+        function terminateCountdown() { clearInterval(clockInterval); }
+
+        function triggerEvaluationScreen(isVictory) {
+            const modal = document.getElementById('clear-panel');
+            const header = document.getElementById('clear-header');
+            const commentary = document.getElementById('clear-commentary');
+            const actionBtn = document.getElementById('action-step-btn');
+            
+            modal.style.display = "flex";
+
+            if (isVictory) {
+                globalStreak++;
+                document.getElementById('streak-num').innerText = globalStreak;
+
+                header.innerText = "CASE SOLVED!";
+                header.style.color = "#00ff88";
+                commentary.innerText = `Sensational tracking, ${agentName}! ${levelManifest[currentStageIndex].title} cleared.`;
+                actionBtn.innerText = currentStageIndex === levelManifest.length - 1 ? "FINISH ASSIGNMENT" : "NEXT LOCATION";
+            } else {
+                header.innerText = "CASE COLD";
+                header.style.color = "#ff4444";
+                commentary.innerText = `The target objects slipped away. Resetting tracking parameters to Room 1.`;
+                actionBtn.innerText = "RETRY INTELLIGENCE";
+            }
+        }
+
+        function progressPipeline() {
+            document.getElementById('clear-panel').style.display = "none";
+            const currentStage = levelManifest[currentStageIndex];
+            const allCleared = currentStage.clues.every(c => c.found);
+
+            if (allCleared) {
+                if (currentStageIndex < levelManifest.length - 1) {
+                    currentStageIndex++;
+                    loadStage();
+                } else {
+                    document.getElementById('start-panel').style.display = "flex";
+                }
+            } else {
+                currentStageIndex = 0;
+                document.getElementById('start-panel').style.display = "flex";
+            }
+        }
+    </script>
+</body>
+</html>
