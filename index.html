@@ -48,9 +48,9 @@
         }
         .tool-btn:active { background: #e67e22; }
 
-        /* Perfect Portrait Viewport Panel (Native 9:16 Aspect Ratio) */
+        /* Exact 9:16 Portrait Aspect Ratio Viewport */
         #scene-container {
-            position: relative; width: 90%; max-width: 440px;
+            position: relative; width: 90%; max-width: 420px;
             aspect-ratio: 9 / 16; margin: 15px 0; 
             border: 4px solid #3a271a; border-radius: 12px;
             overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.8);
@@ -107,8 +107,8 @@
 
     <div class="control-bar">
         <div class="btn-row">
-            <button class="tool-btn" onclick="adjustZoom(0.3)">🔍 ZOOM +</button>
-            <button class="tool-btn" onclick="adjustZoom(-0.3)">🔍 ZOOM -</button>
+            <button class="tool-btn" onclick="adjustZoom(0.4)">🔍 ZOOM +</button>
+            <button class="tool-btn" onclick="adjustZoom(-0.4)">🔍 ZOOM -</button>
             <button class="tool-btn" onclick="resetZoom()">🔄 RESET</button>
         </div>
         <div class="btn-row">
@@ -154,7 +154,7 @@
         let panX = 0;
         let panY = 0;
 
-        // Exactly maps coordinates to the native 1080 x 1920 portrait dimensions of your images
+        // Scaled to match a standard 1080 x 1920 mobile viewport aspect grid
         const NATIVE_WIDTH = 1080;
         const NATIVE_HEIGHT = 1920;
 
@@ -163,44 +163,44 @@
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", x: 115, y: 155, r: 75, found: false },
-                    { name: "Pink Piggy Bank", x: 905, y: 735, r: 75, found: false },
-                    { name: "Africa Map Poster", x: 470, y: 430, r: 85, found: false },
-                    { name: "Green Desk Lamp", x: 155, y: 775, r: 75, found: false },
-                    { name: "Abacus Frame", x: 955, y: 475, r: 75, found: false }
+                    { name: "Terrestrial Globe", x: 110, y: 155, r: 90, found: false },
+                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 90, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 430, r: 100, found: false },
+                    { name: "Green Desk Lamp", x: 150, y: 775, r: 90, found: false },
+                    { name: "Abacus Frame", x: 950, y: 475, r: 90, found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 75, found: false },
-                    { name: "Yellow Straw Hat", x: 515, y: 525, r: 70, found: false },
-                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 65, found: false },
-                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 65, found: false },
-                    { name: "Large Burlap Sack", x: 635, y: 720, r: 85, found: false }
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 95, found: false },
+                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 90, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 85, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 85, found: false },
+                    { name: "Large Burlap Sack", x: 630, y: 720, r: 100, found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", x: 630, y: 160, r: 90, found: false },
-                    { name: "Striped Playground Ball", x: 550, y: 770, r: 75, found: false },
-                    { name: "Sitting Tree Bird", x: 915, y: 185, r: 65, found: false },
-                    { name: "Magnifying Glass", x: 705, y: 930, r: 70, found: false },
-                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 70, found: false }
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 110, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 95, found: false },
+                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 85, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 90, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 90, found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", x: 445, y: 815, r: 95, found: false },
-                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 70, found: false },
-                    { name: "Orrery Solar Model", x: 135, y: 110, r: 75, found: false },
-                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 85, found: false },
-                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 65, found: false }
+                    { name: "Laptop Workspace", x: 440, y: 815, r: 115, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 90, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 90, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 105, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 85, found: false }
                 ]
             }
         ];
@@ -285,15 +285,15 @@
             const containerRect = container.getBoundingClientRect();
             const currentStage = levelManifest[currentStageIndex];
 
-            // 1. Calculate layout position relative to container bounding borders
+            // 1. Capture dynamic bounding viewport box click values
             const clickXInContainer = e.clientX - containerRect.left;
             const clickYInContainer = e.clientY - containerRect.top;
 
-            // 2. Remove pan shift and normalize out zoom scale properties
+            // 2. Remove pan shift distance properties and divide out zoom factors
             const localX = (clickXInContainer - panX) / currentZoomScale;
             const localY = (clickYInContainer - panY) / currentZoomScale;
 
-            // 3. Project directly into the absolute 1080 x 1920 pixel grid space
+            // 3. Project normalized coordinates accurately onto the 1080 x 1920 layout
             const computedX = (localX / containerRect.width) * NATIVE_WIDTH;
             const computedY = (localY / containerRect.height) * NATIVE_HEIGHT;
 
