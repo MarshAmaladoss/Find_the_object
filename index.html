@@ -48,7 +48,7 @@
         }
         .tool-btn:active { background: #e67e22; }
 
-        /* Exact 9:16 Portrait Aspect Ratio Viewport */
+        /* Exact 9:16 Portrait Box */
         #scene-container {
             position: relative; width: 90%; max-width: 420px;
             aspect-ratio: 9 / 16; margin: 15px 0; 
@@ -60,15 +60,27 @@
             width: 100%; height: 100%;
             transition: transform 0.15s ease-out;
             transform-origin: top left;
+            position: relative;
         }
         #scene-img { 
             width: 100%; height: 100%; display: block; 
-            object-fit: fill; cursor: crosshair; 
+            object-fit: fill;
+        }
+
+        /* Responsive Percentage Hotspots */
+        .hotspot {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20;
+            /* Change background to rgba(255,0,0,0.3) if you want to visually see the target areas while debugging */
+            background: rgba(0, 0, 0, 0); 
+            transform: translate(-50%, -50%);
         }
 
         .ring-indicator {
             position: absolute; border-radius: 50%; pointer-events: none;
-            transform: translate(-50%, -50%); z-index: 5;
+            transform: translate(-50%, -50%); z-index: 30;
         }
         .ring-match { border: 4px solid #00ff88; animation: burst 0.4s ease-out forwards; }
         .ring-miss { border: 4px solid #ff4444; animation: burst 0.4s ease-out forwards; }
@@ -121,13 +133,14 @@
 
     <div id="scene-container">
         <div id="zoom-wrapper">
-            <img id="scene-img" src="" alt="Investigation Scene">
+            <img id="scene-img" src="" alt="Investigation Scene" onclick="triggerMissEffect(event)">
+            <div id="hotspot-holder"></div>
         </div>
     </div>
 
     <div id="start-panel" class="panel-overlay" style="display: flex;">
         <h1 style="color: #e67e22; font-size: 34px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • 5 Targets Per Stage • 1 Minute Match Time</p>
+        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • Hotspot Tracking Alternative</p>
         <input type="text" id="nameInput" placeholder="Enter Agent Initials">
         <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
     </div>
@@ -142,6 +155,7 @@
         const img = document.getElementById('scene-img');
         const zoomWrapper = document.getElementById('zoom-wrapper');
         const container = document.getElementById('scene-container');
+        const hotspotHolder = document.getElementById('hotspot-holder');
         const tray = document.getElementById('tray');
 
         let currentStageIndex = 0;
@@ -154,53 +168,50 @@
         let panX = 0;
         let panY = 0;
 
-        // Scaled to match a standard 1080 x 1920 mobile viewport aspect grid
-        const NATIVE_WIDTH = 1080;
-        const NATIVE_HEIGHT = 1920;
-
+        // Visual targets defined using scalable percentage values relative to the portrait image size
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", x: 110, y: 155, r: 90, found: false },
-                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 90, found: false },
-                    { name: "Africa Map Poster", x: 470, y: 430, r: 100, found: false },
-                    { name: "Green Desk Lamp", x: 150, y: 775, r: 90, found: false },
-                    { name: "Abacus Frame", x: 950, y: 475, r: 90, found: false }
+                    { name: "Terrestrial Globe", x: "10.2%", y: "8.1%", w: "16%", h: "10%", found: false },
+                    { name: "Pink Piggy Bank", x: "83.7%", y: "38.2%", w: "16%", h: "10%", found: false },
+                    { name: "Africa Map Poster", x: "43.5%", y: "22.3%", w: "15%", h: "12%", found: false },
+                    { name: "Green Desk Lamp", x: "14.3%", y: "40.3%", w: "15%", h: "11%", found: false },
+                    { name: "Abacus Frame", x:="88.4%", y: "24.7%", w: "14%", h: "12%", found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 95, found: false },
-                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 90, found: false },
-                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 85, found: false },
-                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 85, found: false },
-                    { name: "Large Burlap Sack", x: 630, y: 720, r: 100, found: false }
+                    { name: "Hanging Blue Dress", x: "49.0%", y: "18.7%", w: "16%", h: "12%", found: false },
+                    { name: "Yellow Straw Hat", x: "47.6%", y: "27.3%", w: "15%", h: "10%", found: false },
+                    { name: "Toy Wooden Horse", x: "77.7%", y: "44.7%", w: "14%", h: "10%", found: false },
+                    { name: "Vintage Brass Compass", x: "37.9%", y: "33.5%", w: "12%", h: "8%", found: false },
+                    { name: "Large Burlap Sack", x: "58.3%", y: "37.5%", w: "16%", h: "13%", found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", x: 630, y: 160, r: 110, found: false },
-                    { name: "Striped Playground Ball", x: 550, y: 770, r: 95, found: false },
-                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 85, found: false },
-                    { name: "Magnifying Glass", x: 705, y: 930, r: 90, found: false },
-                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 90, found: false }
+                    { name: "Wooden Treehouse", x: "58.3%", y: "8.3%", w: "18%", h: "13%", found: false },
+                    { name: "Striped Playground Ball", x: "50.9%", y: "40.1%", w: "15%", h: "9%", found: false },
+                    { name: "Sitting Tree Bird", x: "84.7%", y: "9.6%", w: "12%", h: "8%", found: false },
+                    { name: "Magnifying Glass", x: "65.2%", y: "48.4%", w: "14%", h: "8%", found: false },
+                    { name: "Hanging Tree Clock", x: "8.7%", y: "7.0%", w: "12%", h: "8%", found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", x: 440, y: 815, r: 115, found: false },
-                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 90, found: false },
-                    { name: "Orrery Solar Model", x: 135, y: 110, r: 90, found: false },
-                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 105, found: false },
-                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 85, found: false }
+                    { name: "Laptop Workspace", x: "41.2%", y: "42.4%", w: "18%", h: "13%", found: false },
+                    { name: "Sleeping Orange Cat", x: "54.6%", y: "25.7%", w: "15%", h: "10%", found: false },
+                    { name: "Orrery Solar Model", x: "12.5%", y: "5.7%", w: "15%", h: "10%", found: false },
+                    { name: "Cloud Ceiling Fan", x: "47.2%", y: "3.9%", w: "16%", h: "11%", found: false },
+                    { name: "Plush Unicorn Toy", x: "81.0%", y: "30.4%", w: "14%", h: "9%", found: false }
                 ]
             }
         ];
@@ -220,10 +231,54 @@
             resetZoom();
             
             img.src = currentStage.src;
-
             currentStage.clues.forEach(c => c.found = false);
+            
+            buildHotspotElements();
             generateTrayMarkup();
             startCountdown();
+        }
+
+        // Generate click boxes directly on top of the map image using scalable CSS styles
+        function buildHotspotElements() {
+            hotspotHolder.innerHTML = "";
+            const currentStage = levelManifest[currentStageIndex];
+            
+            currentStage.clues.forEach((clue, index) => {
+                const spot = document.createElement('div');
+                spot.className = "hotspot";
+                spot.style.left = clue.x;
+                spot.style.top = clue.y;
+                spot.style.width = clue.w;
+                spot.style.height = clue.h;
+                spot.setAttribute('data-index', index);
+                
+                spot.onclick = function(e) {
+                    e.stopPropagation(); // Stop click from filtering down to the image layer
+                    if (timeRemaining <= 0 || clue.found) return;
+                    
+                    clue.found = true;
+                    spot.style.display = "none"; // Clear layout box out of view
+                    
+                    // Render hit ring directly at finger location
+                    const rect = container.getBoundingClientRect();
+                    renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-match');
+                    
+                    generateTrayMarkup();
+                    
+                    if (currentStage.clues.every(c => c.found)) {
+                        terminateCountdown();
+                        triggerEvaluationScreen(true);
+                    }
+                };
+                
+                hotspotHolder.appendChild(spot);
+            });
+        }
+
+        function triggerMissEffect(e) {
+            if (timeRemaining <= 0) return;
+            const rect = container.getBoundingClientRect();
+            renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-miss');
         }
 
         function generateTrayMarkup() {
@@ -279,51 +334,6 @@
             updateTransform();
         }
 
-        img.onclick = function(e) {
-            if (timeRemaining <= 0) return;
-            
-            const containerRect = container.getBoundingClientRect();
-            const currentStage = levelManifest[currentStageIndex];
-
-            // 1. Capture dynamic bounding viewport box click values
-            const clickXInContainer = e.clientX - containerRect.left;
-            const clickYInContainer = e.clientY - containerRect.top;
-
-            // 2. Remove pan shift distance properties and divide out zoom factors
-            const localX = (clickXInContainer - panX) / currentZoomScale;
-            const localY = (clickYInContainer - panY) / currentZoomScale;
-
-            // 3. Project normalized coordinates accurately onto the 1080 x 1920 layout
-            const computedX = (localX / containerRect.width) * NATIVE_WIDTH;
-            const computedY = (localY / containerRect.height) * NATIVE_HEIGHT;
-
-            let isMatch = false;
-            const activeClues = currentStage.clues;
-
-            for (let clue of activeClues) {
-                if (clue.found) continue;
-                
-                let range = Math.hypot(computedX - clue.x, computedY - clue.y);
-                if (range <= clue.r) {
-                    clue.found = true;
-                    isMatch = true;
-                    
-                    renderPulseRing(clickXInContainer, clickYInContainer, 'ring-match');
-                    generateTrayMarkup();
-                    break;
-                }
-            }
-
-            if (!isMatch) {
-                renderPulseRing(clickXInContainer, clickYInContainer, 'ring-miss');
-            } else {
-                if (activeClues.every(c => c.found)) {
-                    terminateCountdown();
-                    triggerEvaluationScreen(true);
-                }
-            }
-        };
-
         function renderPulseRing(posX, posY, typeClass) {
             const burstNode = document.createElement('div');
             burstNode.className = `ring-indicator ${typeClass}`;
@@ -369,7 +379,7 @@
 
                 header.innerText = "CASE SOLVED!";
                 header.style.color = "#00ff88";
-                commentary.innerText = `Sensational tracking, ${agentName}! ${levelManifest[currentStageIndex].title} cleared.`;
+                commentary.innerText = `Sensational tracking, ${agentName}!`;
                 actionBtn.innerText = currentStageIndex === levelManifest.length - 1 ? "FINISH ASSIGNMENT" : "NEXT LOCATION";
             } else {
                 header.innerText = "CASE COLD";
