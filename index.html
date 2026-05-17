@@ -35,31 +35,29 @@
             text-decoration: line-through; opacity: 0.5;
         }
 
-        /* Scrollable layout area so the true image height fits on small screens */
         #game-viewport {
             width: 100%;
             flex-grow: 1;
-            overflow-y: auto; /* Adds a clean vertical scroll if needed */
+            overflow-y: auto;
             overflow-x: hidden;
             display: flex;
             justify-content: center;
             padding: 15px 0;
         }
 
-        /* Responsive Sandbox that keeps the natural image shapes */
         #scene-container {
             position: relative; 
             width: 92vw; 
-            max-width: 480px; /* Locks maximum desktop display scale */
+            max-width: 450px; 
             border: 4px solid #3a271a; 
             border-radius: 12px;
             box-shadow: 0 12px 35px rgba(0,0,0,0.8);
             background: #000;
-            height: fit-content; /* Dynamically sizes perfectly to the asset height */
+            height: fit-content;
         }
         #scene-img { 
             width: 100%; 
-            height: auto; /* Tells the browser to draw the true image shape as it is */
+            height: auto; 
             display: block; 
             cursor: crosshair; 
         }
@@ -133,50 +131,50 @@
         let agentName = "";
         let globalStreak = 0;
 
-        // Targets defined using standard layout percentage values relative to image dimensions
+        // Native canvas coordinate system ratios mapped specifically to your vertical asset layouts
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", pctX: 11.2, pctY: 8.5, radiusPct: 7.5, found: false },
-                    { name: "Pink Piggy Bank", pctX: 83.3, pctY: 38.3, radiusPct: 7.5, found: false },
-                    { name: "Africa Map Poster", pctX: 43.5, pctY: 22.4, radiusPct: 8.5, found: false },
-                    { name: "Green Desk Lamp", pctX: 14.3, pctY: 40.4, radiusPct: 7.5, found: false },
-                    { name: "Abacus Frame", pctX: 88.0, pctY: 24.7, radiusPct: 7.5, found: false }
+                    { name: "Terrestrial Globe", x: 120, y: 310, r: 80, found: false },
+                    { name: "Pink Piggy Bank", x: 900, y: 1420, r: 80, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 830, r: 90, found: false },
+                    { name: "Green Desk Lamp", x: 155, y: 1490, r: 80, found: false },
+                    { name: "Abacus Frame", x: 955, y: 920, r: 80, found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", pctX: 49.1, pctY: 18.8, radiusPct: 7.5, found: false },
-                    { name: "Yellow Straw Hat", pctX: 47.7, pctY: 27.3, radiusPct: 7.0, found: false },
-                    { name: "Toy Wooden Horse", pctX: 77.8, pctY: 44.8, radiusPct: 6.5, found: false },
-                    { name: "Vintage Brass Compass", pctX: 38.0, pctY: 33.6, radiusPct: 6.5, found: false },
-                    { name: "Large Burlap Sack", pctX: 58.3, pctY: 37.5, radiusPct: 8.5, found: false }
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 80, found: false },
+                    { name: "Yellow Straw Hat", x: 515, y: 525, r: 75, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 70, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 70, found: false },
+                    { name: "Large Burlap Sack", x: 635, y: 720, r: 90, found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", pctX: 58.3, pctY: 8.3, radiusPct: 9.0, found: false },
-                    { name: "Striped Playground Ball", pctX: 50.9, pctY: 40.1, radiusPct: 7.5, found: false },
-                    { name: "Sitting Tree Bird", pctX: 84.7, pctY: 9.6, radiusPct: 6.5, found: false },
-                    { name: "Magnifying Glass", pctX: 65.3, pctY: 48.4, radiusPct: 7.0, found: false },
-                    { name: "Hanging Tree Clock", pctX: 8.8, pctY: 7.0, radiusPct: 7.0, found: false }
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 95, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 80, found: false },
+                    { name: "Sitting Tree Bird", x: 915, y: 185, r: 70, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 75, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 75, found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", pctX: 41.2, pctY: 42.4, radiusPct: 9.5, found: false },
-                    { name: "Sleeping Orange Cat", pctX: 54.6, pctY: 25.8, radiusPct: 7.0, found: false },
-                    { name: "Orrery Solar Model", pctX: 12.5, pctY: 5.7, radiusPct: 7.0, found: false },
-                    { name: "Cloud Ceiling Fan", pctX: 47.2, pctY: 3.9, radiusPct: 8.5, found: false },
-                    { name: "Plush Unicorn Toy", pctX: 81.0, pctY: 30.5, radiusPct: 6.5, found: false }
+                    { name: "Laptop Workspace", x: 445, y: 815, r: 95, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 75, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 75, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 85, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 70, found: false }
                 ]
             }
         ];
@@ -215,9 +213,12 @@
             const rect = img.getBoundingClientRect();
             const currentStage = levelManifest[currentStageIndex];
 
-            // Map clicks smoothly using percentages to bypass absolute window pixel gaps
-            const clickXPercent = ((e.clientX - rect.left) / rect.width) * 100;
-            const clickYPercent = ((e.clientY - rect.top) / rect.height) * 100;
+            // Project calculations relative to native rendering sizes automatically
+            const scaleX = img.naturalWidth / rect.width;
+            const scaleY = img.naturalHeight / rect.height;
+
+            const computedX = (e.clientX - rect.left) * scaleX;
+            const computedY = (e.clientY - rect.top) * scaleY;
 
             let isMatch = false;
             const activeClues = currentStage.clues;
@@ -225,8 +226,8 @@
             for (let clue of activeClues) {
                 if (clue.found) continue;
                 
-                let distance = Math.hypot(clickXPercent - clue.pctX, clickYPercent - clue.pctY);
-                if (distance <= clue.radiusPct) {
+                let range = Math.hypot(computedX - clue.x, computedY - clue.y);
+                if (range <= clue.r) {
                     clue.found = true;
                     isMatch = true;
                     
