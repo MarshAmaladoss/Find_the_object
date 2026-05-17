@@ -45,11 +45,12 @@
             padding: 15px 0;
         }
 
-        /* The Main Display Sandbox Container */
+        /* Scaled Sandbox Container targeting the 768x1376 Aspect Profile */
         #scene-container {
             position: relative; 
             width: 92vw; 
-            max-width: 450px; 
+            max-width: 420px; 
+            aspect-ratio: 768 / 1376;
             border: 4px solid #3a271a; 
             border-radius: 12px;
             box-shadow: 0 12px 35px rgba(0,0,0,0.8);
@@ -59,18 +60,17 @@
         
         #background-img { 
             width: 100%; 
-            height: auto; 
+            height: 100%; 
             display: block; 
+            object-fit: fill;
         }
 
-        /* Clickable Layered Object Styles */
         .object-layer {
             position: absolute;
             cursor: pointer;
             z-index: 5;
             pointer-events: auto;
             display: block;
-            /* Optional: Add a subtle green filter on hover during testing if needed */
             transition: transform 0.1s ease;
         }
         .object-layer:active {
@@ -125,7 +125,7 @@
 
     <div id="start-panel" class="panel-overlay" style="display: flex;">
         <h1 style="color: #e67e22; font-size: 34px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • Element Layering Method</p>
+        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • 768x1376 Target Mesh Layout</p>
         <input type="text" id="nameInput" placeholder="Enter Agent Initials">
         <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
     </div>
@@ -148,7 +148,6 @@
         let agentName = "";
         let globalStreak = 0;
 
-        // Level manifest holding the layout styles and filenames for the cutout image segments
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
@@ -217,7 +216,6 @@
             startCountdown();
         }
 
-        // Dynamically append the cutout image layers straight over the structural backdrop view
         function buildObjectLayers() {
             objectsHolder.innerHTML = "";
             const currentStage = levelManifest[currentStageIndex];
@@ -231,11 +229,11 @@
                 objectImg.style.width = clue.width;
                 
                 objectImg.onclick = function(e) {
-                    e.stopPropagation(); // Stop selection from activating a background miss trigger
+                    e.stopPropagation();
                     if (timeRemaining <= 0 || clue.found) return;
 
                     clue.found = true;
-                    objectImg.style.display = "none"; // Hide item instantly from game view
+                    objectImg.style.display = "none";
 
                     const rect = container.getBoundingClientRect();
                     renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-match');
