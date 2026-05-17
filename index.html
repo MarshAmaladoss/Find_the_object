@@ -55,11 +55,21 @@
             background: #000;
             height: fit-content;
         }
-        #scene-img { 
-            width: 100%; 
-            height: auto; 
-            display: block; 
-            cursor: crosshair; 
+
+        /* SVG Game Window overlaying the asset area */
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Target click spaces hidden natively from display views */
+        .clue-target {
+            fill: transparent;
+            cursor: crosshair;
+            pointer-events: auto;
+            /* Debug trick: Change fill to rgba(255, 0, 0, 0.3) to visually reveal the shapes */
+            fill: rgba(0, 0, 0, 0); 
         }
 
         .ring-indicator {
@@ -103,13 +113,16 @@
 
     <div id="game-viewport">
         <div id="scene-container">
-            <img id="scene-img" src="" alt="Investigation Scene">
+            <svg id="game-canvas" viewBox="0 0 1080 1920" onclick="registerMiss(event)">
+                <image id="scene-img" href="" width="1080" height="1920" />
+                <g id="targets-group"></g>
+            </svg>
         </div>
     </div>
 
     <div id="start-panel" class="panel-overlay" style="display: flex;">
         <h1 style="color: #e67e22; font-size: 34px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • 1 Minute Match Time</p>
+        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • Pure SVG Target Engine</p>
         <input type="text" id="nameInput" placeholder="Enter Agent Initials">
         <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
     </div>
@@ -122,7 +135,9 @@
 
     <script>
         const img = document.getElementById('scene-img');
+        const canvas = document.getElementById('game-canvas');
         const container = document.getElementById('scene-container');
+        const targetsGroup = document.getElementById('targets-group');
         const tray = document.getElementById('tray');
 
         let currentStageIndex = 0;
@@ -131,50 +146,50 @@
         let agentName = "";
         let globalStreak = 0;
 
-        // Native canvas coordinate system ratios mapped specifically to your vertical asset layouts
+        // Custom coordinates verified against raw dimensions 1080x1920 portrait source layouts
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", x: 120, y: 310, r: 80, found: false },
-                    { name: "Pink Piggy Bank", x: 900, y: 1420, r: 80, found: false },
-                    { name: "Africa Map Poster", x: 470, y: 830, r: 90, found: false },
-                    { name: "Green Desk Lamp", x: 155, y: 1490, r: 80, found: false },
-                    { name: "Abacus Frame", x: 955, y: 920, r: 80, found: false }
+                    { name: "Terrestrial Globe", x: 120, y: 160, r: 85, found: false },
+                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 85, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 430, r: 95, found: false },
+                    { name: "Green Desk Lamp", x: 155, y: 775, r: 85, found: false },
+                    { name: "Abacus Frame", x: 955, y: 475, r: 85, found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 80, found: false },
-                    { name: "Yellow Straw Hat", x: 515, y: 525, r: 75, found: false },
-                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 70, found: false },
-                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 70, found: false },
-                    { name: "Large Burlap Sack", x: 635, y: 720, r: 90, found: false }
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 85, found: false },
+                    { name: "Yellow Straw Hat", x: 515, y: 525, r: 80, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 75, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 75, found: false },
+                    { name: "Large Burlap Sack", x: 635, y: 720, r: 95, found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", x: 630, y: 160, r: 95, found: false },
-                    { name: "Striped Playground Ball", x: 550, y: 770, r: 80, found: false },
-                    { name: "Sitting Tree Bird", x: 915, y: 185, r: 70, found: false },
-                    { name: "Magnifying Glass", x: 705, y: 930, r: 75, found: false },
-                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 75, found: false }
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 100, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 85, found: false },
+                    { name: "Sitting Tree Bird", x: 915, y: 185, r: 75, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 80, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 80, found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", x: 445, y: 815, r: 95, found: false },
-                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 75, found: false },
-                    { name: "Orrery Solar Model", x: 135, y: 110, r: 75, found: false },
-                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 85, found: false },
-                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 70, found: false }
+                    { name: "Laptop Workspace", x: 445, y: 815, r: 100, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 80, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 80, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 90, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 75, found: false }
                 ]
             }
         ];
@@ -191,10 +206,52 @@
         function loadStage() {
             const currentStage = levelManifest[currentStageIndex];
             document.getElementById('stage-label').innerText = `CASE ${currentStageIndex + 1}/${levelManifest.length}`;
-            img.src = currentStage.src;
+            
+            img.setAttribute('href', currentStage.src);
             currentStage.clues.forEach(c => c.found = false);
+            
+            buildSvgTargets();
             generateTrayMarkup();
             startCountdown();
+        }
+
+        // Draw targets explicitly within the viewport space using SVG DOM markup elements
+        function buildSvgTargets() {
+            targetsGroup.innerHTML = "";
+            const currentStage = levelManifest[currentStageIndex];
+
+            currentStage.clues.forEach((clue, index) => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", clue.x);
+                circle.setAttribute("cy", clue.y);
+                circle.setAttribute("r", clue.r);
+                circle.setAttribute("class", "clue-target");
+                
+                circle.onclick = function(e) {
+                    e.stopPropagation(); // Block selection click from activating a standard miss ring down level
+                    if (timeRemaining <= 0 || clue.found) return;
+
+                    clue.found = true;
+                    circle.remove(); // Drop circle target out of execution context spaces
+
+                    const rect = container.getBoundingClientRect();
+                    renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-match');
+                    generateTrayMarkup();
+
+                    if (currentStage.clues.every(c => c.found)) {
+                        terminateCountdown();
+                        triggerEvaluationScreen(true);
+                    }
+                };
+
+                targetsGroup.appendChild(circle);
+            });
+        }
+
+        function registerMiss(e) {
+            if (timeRemaining <= 0) return;
+            const rect = container.getBoundingClientRect();
+            renderPulseRing(e.clientX - rect.left, e.clientY - rect.top, 'ring-miss');
         }
 
         function generateTrayMarkup() {
@@ -206,48 +263,6 @@
                 tray.appendChild(badge);
             });
         }
-
-        img.onclick = function(e) {
-            if (timeRemaining <= 0) return;
-            
-            const rect = img.getBoundingClientRect();
-            const currentStage = levelManifest[currentStageIndex];
-
-            // Project calculations relative to native rendering sizes automatically
-            const scaleX = img.naturalWidth / rect.width;
-            const scaleY = img.naturalHeight / rect.height;
-
-            const computedX = (e.clientX - rect.left) * scaleX;
-            const computedY = (e.clientY - rect.top) * scaleY;
-
-            let isMatch = false;
-            const activeClues = currentStage.clues;
-
-            for (let clue of activeClues) {
-                if (clue.found) continue;
-                
-                let range = Math.hypot(computedX - clue.x, computedY - clue.y);
-                if (range <= clue.r) {
-                    clue.found = true;
-                    isMatch = true;
-                    
-                    const containerRect = container.getBoundingClientRect();
-                    renderPulseRing(e.clientX - containerRect.left, e.clientY - containerRect.top, 'ring-match');
-                    generateTrayMarkup();
-                    break;
-                }
-            }
-
-            if (!isMatch) {
-                const containerRect = container.getBoundingClientRect();
-                renderPulseRing(e.clientX - containerRect.left, e.clientY - containerRect.top, 'ring-miss');
-            } else {
-                if (activeClues.every(c => c.found)) {
-                    terminateCountdown();
-                    triggerEvaluationScreen(true);
-                }
-            }
-        };
 
         function renderPulseRing(posX, posY, typeClass) {
             const burstNode = document.createElement('div');
