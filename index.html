@@ -35,20 +35,23 @@
             text-decoration: line-through; opacity: 0.5;
         }
 
-        /* Interactive Zoom Interface */
+        /* Interactive Zoom & Pan Interface */
         .control-bar {
-            display: flex; gap: 15px; margin-top: 10px; z-index: 5;
+            display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; z-index: 5;
+        }
+        .btn-row {
+            display: flex; gap: 8px;
         }
         .tool-btn {
             background: #2c1d11; border: 1px solid #e67e22; color: #fff;
-            padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
+            padding: 6px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px;
         }
         .tool-btn:active { background: #e67e22; }
 
-        /* Enlarged Adaptive Viewport Panel */
+        /* Adjusted Viewport Panel for Portrait/Mobile Wallpapers */
         #scene-container {
-            position: relative; width: 98%; max-width: 1100px;
-            aspect-ratio: 1.63 / 1; margin: 15px 0;
+            position: relative; width: 92%; max-width: 450px;
+            aspect-ratio: 1 / 1.77; margin: 15px 0; /* Standardized to 9:16 Portrait Box */
             border: 4px solid #3a271a; border-radius: 12px;
             overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.8);
             background: #000;
@@ -103,9 +106,17 @@
     <div class="tray-container" id="tray"></div>
 
     <div class="control-bar">
-        <button class="tool-btn" onclick="adjustZoom(0.25)">🔍 ZOOM +</button>
-        <button class="tool-btn" onclick="adjustZoom(-0.25)">🔍 ZOOM -</button>
-        <button class="tool-btn" onclick="resetZoom()">🔄 RESET</button>
+        <div class="btn-row">
+            <button class="tool-btn" onclick="adjustZoom(0.25)">🔍 ZOOM +</button>
+            <button class="tool-btn" onclick="adjustZoom(-0.25)">🔍 ZOOM -</button>
+            <button class="tool-btn" onclick="resetZoom()">🔄 RESET</button>
+        </div>
+        <div class="btn-row">
+            <button class="tool-btn" onclick="panImage(0, -40)">⬆️ UP</button>
+            <button class="tool-btn" onclick="panImage(0, 40)">⬇️ DOWN</button>
+            <button class="tool-btn" onclick="panImage(-40, 0)">⬅️ LEFT</button>
+            <button class="tool-btn" onclick="panImage(40, 0)">➡️ RIGHT</button>
+        </div>
     </div>
 
     <div id="scene-container">
@@ -115,7 +126,7 @@
     </div>
 
     <div id="start-panel" class="panel-overlay" style="display: flex;">
-        <h1 style="color: #e67e22; font-size: 42px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
+        <h1 style="color: #e67e22; font-size: 36px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
         <p style="color: #aaa; margin-bottom: 30px;">4 New Maps • 5 Targets Per Stage • 1 Minute Match Time</p>
         <input type="text" id="nameInput" placeholder="Enter Agent Initials">
         <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
@@ -138,52 +149,59 @@
         let clockInterval = null;
         let agentName = "";
         let globalStreak = 0;
+        
+        // Zoom and Move (Pan) coordinates state tracking
         let currentZoomScale = 1;
+        let panX = 0;
+        let panY = 0;
 
-        /* Re-mapped coordinates specifically tracking target patterns across your 4 new images */
+        // Resolution coordinate space baseline for portrait images (scaled to standard 1000x1777 aspect map)
+        const BASE_WIDTH = 1000;
+        const BASE_HEIGHT = 1777;
+
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", x: 110, y: 155, r: 35, found: false },
-                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 35, found: false },
-                    { name: "Africa Map Poster", x: 470, y: 430, r: 40, found: false },
-                    { name: "Green Desk Lamp", x: 150, y: 775, r: 35, found: false },
-                    { name: "Abacus Frame", x: 950, y: 475, r: 35, found: false }
+                    { name: "Terrestrial Globe", x: 110, y: 155, r: 45, found: false },
+                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 45, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 430, r: 50, found: false },
+                    { name: "Green Desk Lamp", x: 150, y: 775, r: 45, found: false },
+                    { name: "Abacus Frame", x: 950, y: 475, r: 45, found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 35, found: false },
-                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 30, found: false },
-                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 25, found: false },
-                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 25, found: false },
-                    { name: "Large Burlap Sack", x: 630, y: 720, r: 40, found: false }
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 45, found: false },
+                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 40, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 35, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 35, found: false },
+                    { name: "Large Burlap Sack", x: 630, y: 720, r: 50, found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", x: 630, y: 160, r: 45, found: false },
-                    { name: "Striped Playground Ball", x: 550, y: 770, r: 35, found: false },
-                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 25, found: false },
-                    { name: "Magnifying Glass", x: 705, y: 930, r: 30, found: false },
-                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 30, found: false }
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 55, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 45, found: false },
+                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 35, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 40, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 40, found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", x: 440, y: 815, r: 45, found: false },
-                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 30, found: false },
-                    { name: "Orrery Solar Model", x: 135, y: 110, r: 35, found: false },
-                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 40, found: false },
-                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 25, found: false }
+                    { name: "Laptop Workspace", x: 440, y: 815, r: 55, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 40, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 45, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 50, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 35, found: false }
                 ]
             }
         ];
@@ -219,14 +237,31 @@
             });
         }
 
+        function updateTransform() {
+            zoomWrapper.style.transform = `scale(${currentZoomScale}) translate(${panX}px, ${panY}px)`;
+        }
+
         function adjustZoom(amount) {
             currentZoomScale = Math.min(3, Math.max(1, currentZoomScale + amount));
-            zoomWrapper.style.transform = `scale(${currentZoomScale})`;
+            if (currentZoomScale === 1) {
+                panX = 0;
+                panY = 0;
+            }
+            updateTransform();
+        }
+
+        function panImage(dx, dy) {
+            if (currentZoomScale <= 1) return; // Only allow shifting position if zoomed in
+            panX += dx / currentZoomScale;
+            panY += dy / currentZoomScale;
+            updateTransform();
         }
 
         function resetZoom() {
             currentZoomScale = 1;
-            zoomWrapper.style.transform = `scale(1)`;
+            panX = 0;
+            panY = 0;
+            updateTransform();
         }
 
         img.onclick = function(e) {
@@ -235,17 +270,17 @@
             const dimensions = img.getBoundingClientRect();
             const currentStage = levelManifest[currentStageIndex];
 
-            // Extract unscaled dimensions to bypass layout zoom properties
+            // Resolve base dimensions accounting for zoom factor scale boundaries
             const unscaledWidth = dimensions.width / currentZoomScale;
             const unscaledHeight = dimensions.height / currentZoomScale;
 
-            // Isolate layout positioning maps relative to centered zoom offsets
-            const clickXRelative = e.clientX - (dimensions.left + (dimensions.width - unscaledWidth) / 2);
-            const clickYRelative = e.clientY - (dimensions.top + (dimensions.height - unscaledHeight) / 2);
+            // Factor in layout adjustments created by scale and pan translations
+            const clickXRelative = (e.clientX - dimensions.left) / currentZoomScale - panX;
+            const clickYRelative = (e.clientY - dimensions.top) / currentZoomScale - panY;
 
-            // Project coordinates directly back onto the 1000 x 613 baseline asset grid
-            const computedX = clickXRelative * (1000 / unscaledWidth);
-            const computedY = clickYRelative * (613 / unscaledHeight);
+            // Map precisely back to our 1000x1777 portrait grid space
+            const computedX = (clickXRelative / unscaledWidth) * BASE_WIDTH;
+            const computedY = (clickYRelative / unscaledHeight) * BASE_HEIGHT;
 
             let isMatch = false;
             const activeClues = currentStage.clues;
