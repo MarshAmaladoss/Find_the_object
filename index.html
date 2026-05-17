@@ -35,7 +35,7 @@
             text-decoration: line-through; opacity: 0.5;
         }
 
-        /* Interactive Zoom & Pan Interface */
+        /* Interactive Zoom & Pan Controls */
         .control-bar {
             display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; z-index: 5;
         }
@@ -44,14 +44,14 @@
         }
         .tool-btn {
             background: #2c1d11; border: 1px solid #e67e22; color: #fff;
-            padding: 6px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px;
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 12px;
         }
         .tool-btn:active { background: #e67e22; }
 
-        /* Adjusted Viewport Panel for Portrait/Mobile Wallpapers */
+        /* Perfect Portrait Viewport Panel (Native 9:16 Aspect Ratio) */
         #scene-container {
-            position: relative; width: 92%; max-width: 420px;
-            aspect-ratio: 1 / 1.77; margin: 15px 0; 
+            position: relative; width: 90%; max-width: 440px;
+            aspect-ratio: 9 / 16; margin: 15px 0; 
             border: 4px solid #3a271a; border-radius: 12px;
             overflow: hidden; box-shadow: 0 12px 35px rgba(0,0,0,0.8);
             background: #000;
@@ -59,7 +59,7 @@
         #zoom-wrapper {
             width: 100%; height: 100%;
             transition: transform 0.15s ease-out;
-            transform-origin: top left; /* Changed to top-left to make pan calculation accurate */
+            transform-origin: top left;
         }
         #scene-img { 
             width: 100%; height: 100%; display: block; 
@@ -107,15 +107,15 @@
 
     <div class="control-bar">
         <div class="btn-row">
-            <button class="tool-btn" onclick="adjustZoom(0.25)">🔍 ZOOM +</button>
-            <button class="tool-btn" onclick="adjustZoom(-0.25)">🔍 ZOOM -</button>
+            <button class="tool-btn" onclick="adjustZoom(0.3)">🔍 ZOOM +</button>
+            <button class="tool-btn" onclick="adjustZoom(-0.3)">🔍 ZOOM -</button>
             <button class="tool-btn" onclick="resetZoom()">🔄 RESET</button>
         </div>
         <div class="btn-row">
-            <button class="tool-btn" onclick="panImage(0, -50)">⬆️ UP</button>
-            <button class="tool-btn" onclick="panImage(0, 50)">⬇️ DOWN</button>
-            <button class="tool-btn" onclick="panImage(-50, 0)">⬅️ LEFT</button>
-            <button class="tool-btn" onclick="panImage(50, 0)">➡️ RIGHT</button>
+            <button class="tool-btn" onclick="panImage(0, -60)">⬆️ UP</button>
+            <button class="tool-btn" onclick="panImage(0, 60)">⬇️ DOWN</button>
+            <button class="tool-btn" onclick="panImage(-60, 0)">⬅️ LEFT</button>
+            <button class="tool-btn" onclick="panImage(60, 0)">➡️ RIGHT</button>
         </div>
     </div>
 
@@ -126,8 +126,8 @@
     </div>
 
     <div id="start-panel" class="panel-overlay" style="display: flex;">
-        <h1 style="color: #e67e22; font-size: 36px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
-        <p style="color: #aaa; margin-bottom: 30px;">4 New Maps • 5 Targets Per Stage • 1 Minute Match Time</p>
+        <h1 style="color: #e67e22; font-size: 34px; margin-bottom: 5px;">NEW CASE INVESTIGATOR</h1>
+        <p style="color: #aaa; margin-bottom: 30px;">4 Portrait Maps • 5 Targets Per Stage • 1 Minute Match Time</p>
         <input type="text" id="nameInput" placeholder="Enter Agent Initials">
         <button class="btn" onclick="initiateGame()">BEGIN CASE</button>
     </div>
@@ -154,53 +154,53 @@
         let panX = 0;
         let panY = 0;
 
-        // Resolution coordinate space baseline normalized mapping
-        const BASE_WIDTH = 1000;
-        const BASE_HEIGHT = 1777;
+        // Exactly maps coordinates to the native 1080 x 1920 portrait dimensions of your images
+        const NATIVE_WIDTH = 1080;
+        const NATIVE_HEIGHT = 1920;
 
         const levelManifest = [
             {
                 title: "CASE 1: THE TOY STUDY ROOM",
                 src: "30592.png", 
                 clues: [
-                    { name: "Terrestrial Globe", x: 110, y: 155, r: 60, found: false },
-                    { name: "Pink Piggy Bank", x: 900, y: 735, r: 60, found: false },
-                    { name: "Africa Map Poster", x: 470, y: 430, r: 65, found: false },
-                    { name: "Green Desk Lamp", x: 150, y: 775, r: 60, found: false },
-                    { name: "Abacus Frame", x: 950, y: 475, r: 60, found: false }
+                    { name: "Terrestrial Globe", x: 115, y: 155, r: 75, found: false },
+                    { name: "Pink Piggy Bank", x: 905, y: 735, r: 75, found: false },
+                    { name: "Africa Map Poster", x: 470, y: 430, r: 85, found: false },
+                    { name: "Green Desk Lamp", x: 155, y: 775, r: 75, found: false },
+                    { name: "Abacus Frame", x: 955, y: 475, r: 75, found: false }
                 ]
             },
             {
                 title: "CASE 2: THE OCEAN VIEW LOUNGE",
                 src: "30680.png",
                 clues: [
-                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 60, found: false },
-                    { name: "Yellow Straw Hat", x: 510, y: 525, r: 55, found: false },
-                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 50, found: false },
-                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 50, found: false },
-                    { name: "Large Burlap Sack", x: 630, y: 720, r: 65, found: false }
+                    { name: "Hanging Blue Dress", x: 530, y: 360, r: 75, found: false },
+                    { name: "Yellow Straw Hat", x: 515, y: 525, r: 70, found: false },
+                    { name: "Toy Wooden Horse", x: 840, y: 860, r: 65, found: false },
+                    { name: "Vintage Brass Compass", x: 410, y: 645, r: 65, found: false },
+                    { name: "Large Burlap Sack", x: 635, y: 720, r: 85, found: false }
                 ]
             },
             {
                 title: "CASE 3: THE FOREST PLAYGROUND",
                 src: "30682.png",
                 clues: [
-                    { name: "Wooden Treehouse", x: 630, y: 160, r: 70, found: false },
-                    { name: "Striped Playground Ball", x: 550, y: 770, r: 60, found: false },
-                    { name: "Sitting Tree Bird", x: 910, y: 185, r: 50, found: false },
-                    { name: "Magnifying Glass", x: 705, y: 930, r: 55, found: false },
-                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 55, found: false }
+                    { name: "Wooden Treehouse", x: 630, y: 160, r: 90, found: false },
+                    { name: "Striped Playground Ball", x: 550, y: 770, r: 75, found: false },
+                    { name: "Sitting Tree Bird", x: 915, y: 185, r: 65, found: false },
+                    { name: "Magnifying Glass", x: 705, y: 930, r: 70, found: false },
+                    { name: "Hanging Tree Clock", x: 95, y: 135, r: 70, found: false }
                 ]
             },
             {
                 title: "CASE 4: THE NEON BEDROOM",
                 src: "30684.png", 
                 clues: [
-                    { name: "Laptop Workspace", x: 440, y: 815, r: 70, found: false },
-                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 55, found: false },
-                    { name: "Orrery Solar Model", x: 135, y: 110, r: 55, found: false },
-                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 65, found: false },
-                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 50, found: false }
+                    { name: "Laptop Workspace", x: 445, y: 815, r: 95, found: false },
+                    { name: "Sleeping Orange Cat", x: 590, y: 495, r: 70, found: false },
+                    { name: "Orrery Solar Model", x: 135, y: 110, r: 75, found: false },
+                    { name: "Cloud Ceiling Fan", x: 510, y: 75, r: 85, found: false },
+                    { name: "Plush Unicorn Toy", x: 875, y: 585, r: 65, found: false }
                 ]
             }
         ];
@@ -237,19 +237,17 @@
         }
 
         function updateTransform() {
-            // Apply scale first, then clear offset positioning parameters strictly from top-left anchor 
             zoomWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoomScale})`;
         }
 
         function adjustZoom(amount) {
             const oldScale = currentZoomScale;
-            currentZoomScale = Math.min(3, Math.max(1, currentZoomScale + amount));
+            currentZoomScale = Math.min(4, Math.max(1, currentZoomScale + amount));
             
             if (currentZoomScale === 1) {
                 panX = 0;
                 panY = 0;
             } else {
-                // Adjust pan to zoom into the center point roughly instead of shifting away
                 const rect = container.getBoundingClientRect();
                 panX -= (rect.width / 2) * (currentZoomScale - oldScale) / currentZoomScale;
                 panY -= (rect.height / 2) * (currentZoomScale - oldScale) / currentZoomScale;
@@ -262,7 +260,6 @@
             panX += dx;
             panY += dy;
             
-            // Limit boundaries to avoid losing the scene entirely offscreen
             const rect = container.getBoundingClientRect();
             const maxPanX = 0;
             const minPanX = -rect.width * (currentZoomScale - 1);
@@ -285,21 +282,20 @@
         img.onclick = function(e) {
             if (timeRemaining <= 0) return;
             
-            const dimensions = img.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
             const currentStage = levelManifest[currentStageIndex];
 
-            // Calculate precisely where the click landed inside the scaled element box bounds
+            // 1. Calculate layout position relative to container bounding borders
             const clickXInContainer = e.clientX - containerRect.left;
             const clickYInContainer = e.clientY - containerRect.top;
 
-            // Strip the pan translation offset and normalize by the active zoom scale factor
+            // 2. Remove pan shift and normalize out zoom scale properties
             const localX = (clickXInContainer - panX) / currentZoomScale;
             const localY = (clickYInContainer - panY) / currentZoomScale;
 
-            // Map straight over onto our fixed base grid resolution layout matrix rules
-            const computedX = (localX / containerRect.width) * BASE_WIDTH;
-            const computedY = (localY / containerRect.height) * BASE_HEIGHT;
+            // 3. Project directly into the absolute 1080 x 1920 pixel grid space
+            const computedX = (localX / containerRect.width) * NATIVE_WIDTH;
+            const computedY = (localY / containerRect.height) * NATIVE_HEIGHT;
 
             let isMatch = false;
             const activeClues = currentStage.clues;
